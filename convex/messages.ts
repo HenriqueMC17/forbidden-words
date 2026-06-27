@@ -123,7 +123,7 @@ export const sendMessage = mutation({
         await ctx.db.insert("messages", {
           roomId: args.roomId,
           playerName: "System",
-          text: `🚨 Buzz! ${player.name} used a ${isTarget ? "target" : "forbidden"} word ("${triggeredWord}")! -2 points!`,
+          text: `🚨 Buzz! ${player.name} used a ${isTarget ? "target" : "forbidden"} word! -2 points!`,
           type: "system",
           createdAt: Date.now(),
         });

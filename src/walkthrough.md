@@ -40,3 +40,7 @@ Todas as melhorias aprovadas no plano de implementação foram aplicadas com suc
 ## 🔬 Validação e Testes
 *   Foi realizada a compilação do TypeScript e empacotamento completo do Vite (`npm run build`), sendo concluído com sucesso e sem erros de tipagem.
 *   A codificação e geração de tipos do Convex (`npx convex codegen`) foi executada e validada.
+
+### 7. Ajustes Finais de Vazamento de Palavras e Exibição de Fim de Rodada
+*   **Revelação no Fim da Rodada**: Ajustada a query `getRoomDetails` no Convex para liberar a palavra-alvo e suas traduções para todos os jogadores quando o status for `ROUND_END`. Isso resolve o problema dos Guessers verem o card vazio no encerramento.
+*   **Vazamento no Buzz do Sistema**: Ajustada a mensagem de log de sistema no Convex (`messages.ts`) para não exibir a palavra secreta entre parênteses (`\"PHONE\"`). O log agora diz apenas se o Speaker infringiu uma palavra do tabu ou o alvo (`🚨 Buzz! playerName used a target/forbidden word! -2 points!`), protegendo a informação confidencial dos Guessers.

@@ -137,12 +137,13 @@ export const getRoomDetails = query({
       .collect();
 
     const isSpeaker = room.currentSpeakerId === args.token;
+    const showWord = isSpeaker || room.status === "ROUND_END";
 
-    // Proteção de dados: O Guesser não pode ver a palavra-alvo nem as proibidas ou as traduções
-    const targetWord = isSpeaker ? room.targetWord : undefined;
-    const targetTranslation = isSpeaker ? room.targetTranslation : undefined;
-    const forbiddenWords = isSpeaker ? room.forbiddenWords : undefined;
-    const forbiddenTranslations = isSpeaker ? room.forbiddenTranslations : undefined;
+    // Proteção de dados: O Guesser não pode ver a palavra-alvo nem as proibidas ou as traduções durante a rodada
+    const targetWord = showWord ? room.targetWord : undefined;
+    const targetTranslation = showWord ? room.targetTranslation : undefined;
+    const forbiddenWords = showWord ? room.forbiddenWords : undefined;
+    const forbiddenTranslations = showWord ? room.forbiddenTranslations : undefined;
 
     return {
       _id: room._id,
