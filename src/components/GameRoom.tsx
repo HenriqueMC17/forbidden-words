@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -215,7 +215,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
     }
   };
 
-  const handleVoiceTranscript = async (text: string) => {
+  const handleVoiceTranscript = useCallback(async (text: string) => {
     try {
       await sendMessage({
         roomId: room._id,
@@ -225,7 +225,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
     } catch (err) {
       console.error("Erro ao enviar transcrição de voz", err);
     }
-  };
+  }, [room?._id, playerToken, sendMessage]);
 
   const handleStart = async () => {
     try {

@@ -44,3 +44,9 @@ Todas as melhorias aprovadas no plano de implementação foram aplicadas com suc
 ### 7. Ajustes Finais de Vazamento de Palavras e Exibição de Fim de Rodada
 *   **Revelação no Fim da Rodada**: Ajustada a query `getRoomDetails` no Convex para liberar a palavra-alvo e suas traduções para todos os jogadores quando o status for `ROUND_END`. Isso resolve o problema dos Guessers verem o card vazio no encerramento.
 *   **Vazamento no Buzz do Sistema**: Ajustada a mensagem de log de sistema no Convex (`messages.ts`) para não exibir a palavra secreta entre parênteses (`\"PHONE\"`). O log agora diz apenas se o Speaker infringiu uma palavra do tabu ou o alvo (`🚨 Buzz! playerName used a target/forbidden word! -2 points!`), protegendo a informação confidencial dos Guessers.
+
+### 8. Correção Crítica de Reinicialização do Microfone (Voice Recording Bug)
+*   **Causa do Bug**: O callback `onTranscript` (que é a função `handleVoiceTranscript` de `GameRoom.tsx`) não estava memorizado. Com a atualização do timer a cada 250ms, a função era recriada a cada renderização, disparando o efeito colateral (`useEffect`) do `VoiceTranscriber.tsx` que chamava `.abort()` e reiniciava a sessão de reconhecimento de voz. Isso impossibilitava qualquer gravação.
+*   **Solução**: Aplicados dois níveis de defesa contra esse comportamento:
+    1. Adicionado `useCallback` na função `handleVoiceTranscript` em `GameRoom.tsx` para garantir estabilidade de referência.
+    2. Adicionado o padrão de `onTranscriptRef` (usando `useRef`) em `VoiceTranscriber.tsx` para desconectar a referência mutável do callback do ciclo de vida do `useEffect` de gravação de áudio, permitindo que as dependências desse efeito fiquem vazias (`[]`) e nunca causem reinicializações ou abortos do microfone em runtime.

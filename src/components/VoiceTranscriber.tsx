@@ -51,6 +51,11 @@ export const VoiceTranscriber: React.FC<VoiceTranscriberProps> = ({ onTranscript
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
+  const onTranscriptRef = useRef(onTranscript);
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
+
   useEffect(() => {
     // Suporte para navegadores web (Chrome, Edge, Safari utilizam webkitSpeechRecognition)
     const SpeechRecognitionClass = 
@@ -86,7 +91,7 @@ export const VoiceTranscriber: React.FC<VoiceTranscriberProps> = ({ onTranscript
 
       setInterimText(interim);
       if (final.trim()) {
-        onTranscript(final.trim());
+        onTranscriptRef.current(final.trim());
       }
     };
 
@@ -107,7 +112,7 @@ export const VoiceTranscriber: React.FC<VoiceTranscriberProps> = ({ onTranscript
         recognitionRef.current.abort();
       }
     };
-  }, [onTranscript]);
+  }, []);
 
   const toggleListening = () => {
     if (!recognitionRef.current) return;
