@@ -1,6 +1,43 @@
 import { mutation } from "./_generated/server.js";
 import { v } from "convex/values";
 
+function isWordMatch(messageWord: string, targetWord: string): boolean {
+  const m = messageWord.toUpperCase().trim();
+  const t = targetWord.toUpperCase().trim();
+  
+  if (m === t) return true;
+  
+  // Se a palavra for muito curta, permite apenas correspondência exata ou plural simples em 'S'
+  if (t.length <= 3) {
+    return m === t || m === t + "S";
+  }
+  
+  // Regras de sufixos em inglês para correspondência inteligente (fuzzy/stem match)
+  const suffixes = ["S", "ES", "ED", "ING"];
+  for (const suffix of suffixes) {
+    if (t + suffix === m) return true;
+  }
+  
+  // Se t termina com 'E' (ex: RIDE, PHONE) e m termina com 'ING' ou 'ED' (ex: RIDING, RIDED)
+  if (t.endsWith("E")) {
+    const tWithoutE = t.slice(0, -1);
+    if (m === tWithoutE + "ING" || m === tWithoutE + "ED") return true;
+  }
+  
+  // Se t termina com 'Y' (ex: LIBRARY) e m termina com 'IES' (ex: LIBRARIES)
+  if (t.endsWith("Y")) {
+    const tWithoutY = t.slice(0, -1);
+    if (m === tWithoutY + "IES" || m === tWithoutY + "IED") return true;
+  }
+
+  // Se t é prefixo de m e m é apenas 1 ou 2 caracteres mais longo (ex: astronaut -> astronauts)
+  if (m.startsWith(t) && m.length <= t.length + 2) {
+    return true;
+  }
+  
+  return false;
+}
+
 export const sendMessage = mutation({
   args: {
     roomId: v.id("rooms"),
@@ -39,8 +76,8 @@ export const sendMessage = mutation({
 
     if (isSpeaker) {
       // Validação do Speaker: não pode usar a palavra-alvo nem as proibidas
-      const targetWord = room.targetWord?.toUpperCase() || "";
-      const forbidden = room.forbiddenWords?.map(w => w.toUpperCase()) || [];
+      const targetWord = room.targetWord || "";
+      const forbidden = room.forbiddenWords || [];
       
       // Remove pontuações comuns para checar as palavras individualmente
       const wordsInMessage = textTrimmed
@@ -53,12 +90,13 @@ export const sendMessage = mutation({
       let isTarget = false;
 
       for (const w of wordsInMessage) {
-        if (w === targetWord) {
-          triggeredWord = targetWord;
+        if (isWordMatch(w, targetWord)) {
+          triggeredWord = w;
           isTarget = true;
           break;
         }
-        if (forbidden.includes(w)) {
+        const forbiddenMatch = forbidden.find(f => isWordMatch(w, f));
+        if (forbiddenMatch) {
           triggeredWord = w;
           isForbidden = true;
           break;
@@ -67,7 +105,7 @@ export const sendMessage = mutation({
 
       if (isForbidden || isTarget) {
         // Censura o texto na mensagem exibida
-        const censoredText = textTrimmed.replace(new RegExp(triggeredWord, "gi"), "🤫🤫🤫");
+        const censoredText = textTrimmed.replace(new RegExp(triggeredWord, "gi"), "██████");
         
         // Penalidade ao Speaker: perde 2 pontos (mínimo de 0)
         const newScore = Math.max(0, player.score - 2);
@@ -85,7 +123,7 @@ export const sendMessage = mutation({
         await ctx.db.insert("messages", {
           roomId: args.roomId,
           playerName: "System",
-          text: `⚠️ Buzz! ${player.name} used a ${isTarget ? "target" : "forbidden"} word ("${triggeredWord}")! -2 points!`,
+          text: `🚨 Buzz! ${player.name} used a ${isTarget ? "target" : "forbidden"} word ("${triggeredWord}")! -2 points!`,
           type: "system",
           createdAt: Date.now(),
         });

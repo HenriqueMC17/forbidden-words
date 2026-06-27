@@ -102,11 +102,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             msgBg = "rgba(244, 63, 94, 0.1)";
             borderCol = "rgba(244, 63, 94, 0.2)";
             txtCol = "rgba(244, 63, 94, 1)";
-            prefix = "⚠️";
+            prefix = "🚨";
           } else if (msg.type === "guess") {
             msgBg = "rgba(6, 182, 212, 0.06)";
             borderCol = "rgba(6, 182, 212, 0.12)";
-            prefix = "🔮";
+            prefix = "💬";
           }
 
           return (

@@ -102,6 +102,14 @@ export const joinRoom = mutation({
     } else {
       // Jogador reconectando
       await ctx.db.patch(existingPlayer._id, { isOnline: true });
+
+      await ctx.db.insert("messages", {
+        roomId: room._id,
+        playerName: "System",
+        text: `${args.playerName} reconnected.`,
+        type: "system",
+        createdAt: Date.now(),
+      });
     }
 
     return { roomId: room._id };
@@ -130,9 +138,11 @@ export const getRoomDetails = query({
 
     const isSpeaker = room.currentSpeakerId === args.token;
 
-    // Proteção de dados: O Guesser não pode ver a palavra-alvo nem as proibidas
+    // Proteção de dados: O Guesser não pode ver a palavra-alvo nem as proibidas ou as traduções
     const targetWord = isSpeaker ? room.targetWord : undefined;
+    const targetTranslation = isSpeaker ? room.targetTranslation : undefined;
     const forbiddenWords = isSpeaker ? room.forbiddenWords : undefined;
+    const forbiddenTranslations = isSpeaker ? room.forbiddenTranslations : undefined;
 
     return {
       _id: room._id,
@@ -144,7 +154,9 @@ export const getRoomDetails = query({
       roundEndTime: room.roundEndTime,
       usedWords: room.usedWords,
       targetWord,
+      targetTranslation,
       forbiddenWords,
+      forbiddenTranslations,
       players,
       messages: messages.slice(-50), // Envia apenas as últimas 50 mensagens
     };
@@ -170,8 +182,8 @@ export const startGame = mutation({
       throw new Error("Mínimo de 2 jogadores para iniciar o jogo");
     }
 
-    // Seleciona o primeiro Speaker (host)
-    const speaker = players.find(p => p.token === room.hostId) || players[0];
+    // Seleciona o primeiro Speaker (host) que esteja online
+    const speaker = players.find(p => p.token === room.hostId && p.isOnline) || players.find(p => p.isOnline) || players[0];
     // Seleciona uma palavra aleatória
     const randomCard = WORDS[Math.floor(Math.random() * WORDS.length)];
 
@@ -179,7 +191,9 @@ export const startGame = mutation({
       status: "IN_PROGRESS",
       currentSpeakerId: speaker.token,
       targetWord: randomCard.word,
+      targetTranslation: randomCard.translation,
       forbiddenWords: randomCard.forbidden,
+      forbiddenTranslations: randomCard.forbiddenTranslations,
       roundCount: 1,
       roundEndTime: Date.now() + 60000, // 60 segundos
       usedWords: [randomCard.word],
@@ -208,15 +222,30 @@ export const nextRound = mutation({
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
       .collect();
 
-    // Encontra o próximo Speaker
+    // Rotação inteligente de Speaker: Pula jogadores offline
     let nextSpeakerIndex = 0;
+    let foundOnlineSpeaker = false;
+    const onlinePlayers = players.filter(p => p.isOnline);
+
+    if (onlinePlayers.length === 0) {
+      throw new Error("Não há jogadores online para rodar a próxima rodada");
+    }
+
     if (room.currentSpeakerId) {
       const currentIndex = players.findIndex((p) => p.token === room.currentSpeakerId);
       if (currentIndex !== -1) {
-        nextSpeakerIndex = (currentIndex + 1) % players.length;
+        // Tenta achar o próximo na ordem circular que esteja online
+        for (let i = 1; i <= players.length; i++) {
+          const checkIndex = (currentIndex + i) % players.length;
+          if (players[checkIndex].isOnline) {
+            nextSpeakerIndex = checkIndex;
+            foundOnlineSpeaker = true;
+            break;
+          }
+        }
       }
     }
-    const nextSpeaker = players[nextSpeakerIndex];
+    const nextSpeaker = foundOnlineSpeaker ? players[nextSpeakerIndex] : onlinePlayers[0];
 
     // Encontra uma palavra que ainda não foi usada
     let availableWords = WORDS.filter((w) => !room.usedWords.includes(w.word));
@@ -233,7 +262,9 @@ export const nextRound = mutation({
       status: "IN_PROGRESS",
       currentSpeakerId: nextSpeaker.token,
       targetWord: randomCard.word,
+      targetTranslation: randomCard.translation,
       forbiddenWords: randomCard.forbidden,
+      forbiddenTranslations: randomCard.forbiddenTranslations,
       roundCount: room.roundCount + 1,
       roundEndTime: Date.now() + 60000,
       usedWords,
@@ -265,7 +296,7 @@ export const forceEndRound = mutation({
     await ctx.db.insert("messages", {
       roomId: args.roomId,
       playerName: "System",
-      text: `Time's up! The target word was: "${room.targetWord}".`,
+      text: `Time's up! The target word was: "${room.targetWord}" (${room.targetTranslation}).`,
       type: "system",
       createdAt: Date.now(),
     });

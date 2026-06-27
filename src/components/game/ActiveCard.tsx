@@ -8,7 +8,9 @@ interface ActiveCardProps {
   isSpeaker: boolean;
   timeLeft: number;
   targetWord?: string;
+  targetTranslation?: string; // Dica em português
   forbiddenWords?: string[];
+  forbiddenTranslations?: string[]; // Dicas das palavras proibidas
   currentSpeakerName?: string;
   playerCount: number;
   onStartGame: () => void;
@@ -22,7 +24,9 @@ export const ActiveCard: React.FC<ActiveCardProps> = ({
   isSpeaker,
   timeLeft,
   targetWord,
+  targetTranslation,
   forbiddenWords,
+  forbiddenTranslations,
   currentSpeakerName,
   playerCount,
   onStartGame,
@@ -140,7 +144,14 @@ export const ActiveCard: React.FC<ActiveCardProps> = ({
                 <h2 style={{ fontSize: "2.4rem", fontWeight: 800, margin: "8px 0", color: "white" }}>
                   {targetWord}
                 </h2>
-                <div style={{ height: "1px", background: "rgba(139, 92, 246, 0.2)", margin: "16px 0" }}></div>
+                {targetTranslation && (
+                  <span style={{ fontSize: "0.95rem", color: "var(--text-secondary)", fontStyle: "italic", display: "block", marginTop: "-6px", marginBottom: "12px" }}>
+                    ({targetTranslation})
+                  </span>
+                )}
+                
+                <div style={{ height: "1px", background: "rgba(139, 92, 246, 0.2)", margin: "8px 0 16px 0" }}></div>
+                
                 <span style={{ fontSize: "0.8rem", color: "rgba(244, 63, 94, 1)", fontWeight: 700, letterSpacing: "1px" }}>
                   PALAVRAS PROIBIDAS (TABOO)
                 </span>
@@ -153,22 +164,33 @@ export const ActiveCard: React.FC<ActiveCardProps> = ({
                     marginTop: "10px",
                   }}
                 >
-                  {forbiddenWords?.map((fw) => (
-                    <li
-                      key={fw}
-                      style={{
-                        background: "rgba(244, 63, 94, 0.08)",
-                        border: "1px solid rgba(244, 63, 94, 0.15)",
-                        padding: "8px 12px",
-                        borderRadius: "8px",
-                        fontWeight: 600,
-                        fontSize: "1rem",
-                        color: "rgba(244, 63, 94, 1)",
-                      }}
-                    >
-                      {fw}
-                    </li>
-                  ))}
+                  {forbiddenWords?.map((fw, idx) => {
+                    const translation = forbiddenTranslations?.[idx];
+                    return (
+                      <li
+                        key={fw}
+                        style={{
+                          background: "rgba(244, 63, 94, 0.08)",
+                          border: "1px solid rgba(244, 63, 94, 0.15)",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          color: "rgba(244, 63, 94, 1)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}
+                      >
+                        <span>{fw}</span>
+                        {translation && (
+                          <span style={{ fontSize: "0.85rem", color: "rgba(244, 63, 94, 0.65)", fontStyle: "italic", fontWeight: 500 }}>
+                            {translation}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
 
@@ -227,7 +249,7 @@ export const ActiveCard: React.FC<ActiveCardProps> = ({
           }}
           className="fade-in"
         >
-          <span style={{ fontSize: "3.5rem" }}>🏆</span>
+          <span style={{ fontSize: "3.5rem" }}>🎉</span>
           <h2>Fim da Rodada!</h2>
           <div
             style={{
@@ -240,6 +262,11 @@ export const ActiveCard: React.FC<ActiveCardProps> = ({
           >
             <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>A palavra alvo era:</p>
             <h2 style={{ fontSize: "2rem", color: "white", margin: "4px 0" }}>{targetWord}</h2>
+            {targetTranslation && (
+              <p style={{ fontSize: "0.95rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                ({targetTranslation})
+              </p>
+            )}
           </div>
           {isHost ? (
             <button onClick={onNextRound} className="btn btn-primary" style={{ marginTop: "10px" }}>

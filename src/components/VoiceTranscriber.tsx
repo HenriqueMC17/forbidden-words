@@ -63,7 +63,7 @@ export const VoiceTranscriber: React.FC<VoiceTranscriberProps> = ({ onTranscript
     }
 
     const rec = new SpeechRecognitionClass();
-    rec.continuous = false;
+    rec.continuous = true; // Reconhecimento de voz contínuo ativado!
     rec.interimResults = true;
     rec.lang = "en-US"; // Obriga o reconhecimento de fala em Inglês
 
@@ -85,10 +85,8 @@ export const VoiceTranscriber: React.FC<VoiceTranscriberProps> = ({ onTranscript
       }
 
       setInterimText(interim);
-      if (final) {
-        onTranscript(final);
-        setInterimText("");
-        setIsListening(false);
+      if (final.trim()) {
+        onTranscript(final.trim());
       }
     };
 
@@ -99,6 +97,7 @@ export const VoiceTranscriber: React.FC<VoiceTranscriberProps> = ({ onTranscript
 
     rec.onend = () => {
       setIsListening(false);
+      setInterimText("");
     };
 
     recognitionRef.current = rec;

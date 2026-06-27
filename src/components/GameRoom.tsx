@@ -65,6 +65,35 @@ const playBuzzSound = () => {
   }
 };
 
+const playTickSound = (isTock: boolean, timeLeft: number) => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as WindowWithAudioContext).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    // O tom aumenta conforme o tempo fica menor (de 10s a 1s)
+    const baseFreq = isTock ? 380 : 560;
+    const pitchMultiplier = 1 + (10 - timeLeft) * 0.05; // Vai de 1.0x a 1.45x
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(baseFreq * pitchMultiplier, ctx.currentTime);
+    
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.08);
+  } catch (e) {
+    // Silencia erros de áudio
+  }
+};
+
 export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave }) => {
   const room = useQuery(api.rooms.getRoomDetails, {
     roomId: roomId as Id<"rooms">,
@@ -112,12 +141,19 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
     }
   }, [room?.messages]);
 
-  // Temporizador local reativo sincronizado com o Convex
+  // Temporizador local reativo sincronizado com o Convex com feedback sonoro (tique-taque)
   useEffect(() => {
     if (room && room.status === "IN_PROGRESS" && room.roundEndTime) {
+      let lastTickSecond = -1;
       const updateTimer = () => {
         const remaining = Math.max(0, Math.ceil((room.roundEndTime! - Date.now()) / 1000));
         setTimeLeft(remaining);
+
+        // Tique-taque sonoro de urgência nos últimos 10 segundos
+        if (remaining > 0 && remaining <= 10 && remaining !== lastTickSecond) {
+          lastTickSecond = remaining;
+          playTickSound(remaining % 2 === 0, remaining);
+        }
 
         if (remaining === 0) {
           clearInterval(interval);
@@ -135,6 +171,20 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
       return () => clearInterval(interval);
     }
   }, [room?.status, room?.roundEndTime, room?.hostId, playerToken, roomId, forceEndRound]);
+
+  // Event listener para tratar desconexão automática ao fechar a aba ou recarregar (Presence)
+  useEffect(() => {
+    const handleUnload = () => {
+      leaveRoom({ roomId: roomId as Id<"rooms">, token: playerToken }).catch((err) => {
+        console.error("Failed to leave room on unload", err);
+      });
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, [roomId, playerToken, leaveRoom]);
 
   if (!room) {
     return (
@@ -245,7 +295,9 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
               isSpeaker={isSpeaker}
               timeLeft={timeLeft}
               targetWord={room.targetWord}
+              targetTranslation={room.targetTranslation}
               forbiddenWords={room.forbiddenWords}
+              forbiddenTranslations={room.forbiddenTranslations}
               currentSpeakerName={currentSpeaker?.name}
               playerCount={room.players.length}
               onStartGame={handleStart}

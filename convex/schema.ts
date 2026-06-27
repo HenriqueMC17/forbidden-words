@@ -10,7 +10,9 @@ export default defineSchema({
     roundCount: v.number(),
     roundEndTime: v.optional(v.number()), // Timestamp epoch de quando a rodada termina
     targetWord: v.optional(v.string()),
+    targetTranslation: v.optional(v.string()), // Tradução em português da palavra-alvo
     forbiddenWords: v.optional(v.array(v.string())),
+    forbiddenTranslations: v.optional(v.array(v.string())), // Traduções em português das palavras proibidas
     usedWords: v.array(v.string()), // Palavras já usadas neste jogo para não repetir
   }).index("by_code", ["code"]),
 
