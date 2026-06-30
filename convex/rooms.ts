@@ -16,8 +16,8 @@ export const createRoom = mutation({
   args: {
     playerName: v.string(),
     token: v.string(),
-    avatar: v.string(),
-    color: v.string(),
+    avatar: v.optional(v.string()),
+    color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     let code = generateCode();
@@ -50,8 +50,8 @@ export const createRoom = mutation({
       name: args.playerName,
       score: 0,
       isOnline: true,
-      avatar: args.avatar,
-      color: args.color,
+      avatar: args.avatar ?? "🦊",
+      color: args.color ?? "hsl(262, 83%, 68%)",
       isTyping: false,
     });
 
@@ -72,8 +72,8 @@ export const joinRoom = mutation({
     code: v.string(),
     playerName: v.string(),
     token: v.string(),
-    avatar: v.string(),
-    color: v.string(),
+    avatar: v.optional(v.string()),
+    color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const formattedCode = args.code.toUpperCase().trim();
@@ -99,8 +99,8 @@ export const joinRoom = mutation({
         name: args.playerName,
         score: 0,
         isOnline: true,
-        avatar: args.avatar,
-        color: args.color,
+        avatar: args.avatar ?? "🦊",
+        color: args.color ?? "hsl(262, 83%, 68%)",
         isTyping: false,
       });
 
@@ -115,8 +115,8 @@ export const joinRoom = mutation({
       // Jogador reconectando, atualiza avatar/cor caso tenham mudado
       await ctx.db.patch(existingPlayer._id, { 
         isOnline: true,
-        avatar: args.avatar,
-        color: args.color
+        avatar: args.avatar ?? existingPlayer.avatar ?? "🦊",
+        color: args.color ?? existingPlayer.color ?? "hsl(262, 83%, 68%)"
       });
 
       await ctx.db.insert("messages", {
