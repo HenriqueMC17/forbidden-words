@@ -58,7 +58,7 @@ export const sendMessage = mutation({
     const textTrimmed = args.text.trim();
     if (!textTrimmed) return;
 
-    // Chat normal em LOBBY ou ROUND_END
+    // Chat normal em LOBBY ou ROUND_END / GAME_OVER
     if (room.status !== "IN_PROGRESS") {
       await ctx.db.insert("messages", {
         roomId: args.roomId,
@@ -145,23 +145,52 @@ export const sendMessage = mutation({
 
       if (guess === targetWord) {
         // Guesser acertou! +10 pontos
-        await ctx.db.patch(player._id, { score: player.score + 10 });
+        const newGuesserScore = player.score + 10;
+        await ctx.db.patch(player._id, { score: newGuesserScore });
         
         // Speaker ganha +5 pontos pela boa descrição
+        let speakerName = "";
+        let newSpeakerScore = 0;
         if (room.currentSpeakerId) {
           const speaker = await ctx.db
             .query("players")
             .withIndex("by_room_token", (q) => q.eq("roomId", args.roomId).eq("token", room.currentSpeakerId!))
             .unique();
           if (speaker) {
-            await ctx.db.patch(speaker._id, { score: speaker.score + 5 });
+            newSpeakerScore = speaker.score + 5;
+            speakerName = speaker.name;
+            await ctx.db.patch(speaker._id, { score: newSpeakerScore });
           }
         }
 
-        // Finaliza a rodada atual
-        await ctx.db.patch(args.roomId, {
-          status: "ROUND_END",
-        });
+        // Finaliza a rodada atual ou declara fim de jogo
+        const targetScore = room.targetScore ?? 50;
+        const isGuesserWinner = newGuesserScore >= targetScore;
+        const isSpeakerWinner = newSpeakerScore >= targetScore;
+
+        if (isGuesserWinner || isSpeakerWinner) {
+          // Atualiza status da sala para GAME_OVER
+          await ctx.db.patch(args.roomId, {
+            status: "GAME_OVER",
+          });
+
+          // Determina o vencedor
+          const winnerName = isGuesserWinner ? player.name : speakerName;
+          const winnerScore = isGuesserWinner ? newGuesserScore : newSpeakerScore;
+
+          await ctx.db.insert("messages", {
+            roomId: args.roomId,
+            playerName: "System",
+            text: `🏆 FIM DE JOGO! ${winnerName} atingiu o limite de ${targetScore} pontos (${winnerScore} pts) e venceu a partida! 👑`,
+            type: "system",
+            createdAt: Date.now(),
+          });
+        } else {
+          // Fecha a rodada normalmente
+          await ctx.db.patch(args.roomId, {
+            status: "ROUND_END",
+          });
+        }
 
         await ctx.db.insert("messages", {
           roomId: args.roomId,
@@ -172,13 +201,15 @@ export const sendMessage = mutation({
           createdAt: Date.now(),
         });
 
-        await ctx.db.insert("messages", {
-          roomId: args.roomId,
-          playerName: "System",
-          text: `🎉 Correct! ${player.name} guessed the word "${targetWord}"!`,
-          type: "system",
-          createdAt: Date.now(),
-        });
+        if (!(isGuesserWinner || isSpeakerWinner)) {
+          await ctx.db.insert("messages", {
+            roomId: args.roomId,
+            playerName: "System",
+            text: `🎉 Correct! ${player.name} guessed the word "${targetWord}"!`,
+            type: "system",
+            createdAt: Date.now(),
+          });
+        }
       } else {
         // Palpite incorreto
         await ctx.db.insert("messages", {

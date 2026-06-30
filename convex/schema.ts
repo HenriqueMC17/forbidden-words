@@ -4,7 +4,7 @@ import { v } from "convex/values";
 export default defineSchema({
   rooms: defineTable({
     code: v.string(), // Código de 4 letras da sala
-    status: v.union(v.literal("LOBBY"), v.literal("IN_PROGRESS"), v.literal("ROUND_END")),
+    status: v.union(v.literal("LOBBY"), v.literal("IN_PROGRESS"), v.literal("ROUND_END"), v.literal("GAME_OVER")),
     hostId: v.string(), // Token do jogador host
     currentSpeakerId: v.optional(v.string()), // Token do jogador que é o Speaker
     roundCount: v.number(),
@@ -14,6 +14,8 @@ export default defineSchema({
     forbiddenWords: v.optional(v.array(v.string())),
     forbiddenTranslations: v.optional(v.array(v.string())), // Traduções em português das palavras proibidas
     usedWords: v.array(v.string()), // Palavras já usadas neste jogo para não repetir
+    roundDuration: v.optional(v.number()), // Configuração: tempo do round em segundos
+    targetScore: v.optional(v.number()), // Configuração: pontuação para vencer
   }).index("by_code", ["code"]),
 
   players: defineTable({
@@ -22,6 +24,9 @@ export default defineSchema({
     name: v.string(),
     score: v.number(),
     isOnline: v.boolean(),
+    avatar: v.optional(v.string()), // Avatar (emoji) selecionado pelo jogador
+    color: v.optional(v.string()), // Cor de destaque selecionada (e.g. class ou cor HSL)
+    isTyping: v.optional(v.boolean()), // Indica se o jogador está digitando
   }).index("by_room", ["roomId"])
     .index("by_room_token", ["roomId", "token"]),
 

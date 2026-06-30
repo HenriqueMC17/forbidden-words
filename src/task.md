@@ -1,18 +1,13 @@
-﻿- [x] 1. Correção Geral de Codificação (Saneamento de Strings)
-  - [x] 1.1. Corrigir textos em convex/rooms.ts
-  - [x] 1.2. Corrigir textos em convex/messages.ts
-  - [x] 1.3. Corrigir textos em convex/schema.ts
-  - [x] 1.4. Corrigir textos em src/components/game/ActiveCard.tsx
-  - [x] 1.5. Corrigir textos em src/components/game/ChatPanel.tsx
-  - [x] 1.6. Corrigir textos em src/components/game/PlayerSidebar.tsx
-  - [x] 1.7. Corrigir textos em src/components/GameRoom.tsx
-  - [x] 1.8. Corrigir textos em src/components/Lobby.tsx
-- [x] 2. Backend - Rotação de Speaker e Matcher de Palavras
-  - [x] 2.1. Atualizar convex/words.ts com mais palavras e traduções
-  - [x] 2.2. Atualizar convex/rooms.ts (próximo speaker pular offline, carregar traduções)
-  - [x] 2.3. Atualizar convex/messages.ts (matcher fuzzy para plurais e sufixos)
-- [x] 3. Frontend - VoiceTranscriber e ActiveCard
-  - [x] 3.1. Atualizar src/components/VoiceTranscriber.tsx (modo contínuo)
-  - [x] 3.2. Atualizar src/components/game/ActiveCard.tsx (exibir dicas de tradução em português)
-- [x] 4. Frontend - Tique-Taque e Autodesconexão
-  - [x] 4.1. Atualizar src/components/GameRoom.tsx (efeito tique-taque Web Audio API, event listener para beforeunload/unload)
+﻿- [ ] 1. Backend: Atualizar o Schema e Tipos do Convex
+  - [ ] 1.1. Adicionar campos de configuração na tabela `rooms` (convex/schema.ts)
+  - [ ] 1.2. Adicionar campos de perfil e presença na tabela `players` (convex/schema.ts)
+- [ ] 2. Backend: Implementar as Mutações e Lógica do Convex
+  - [ ] 2.1. Atualizar `rooms.ts` (configuração inicial, updateSettings, resetRoom, nextRound adaptado)
+  - [ ] 2.2. Atualizar `players.ts` (mutações de entrada com avatar/cor, typing status)
+  - [ ] 2.3. Atualizar `messages.ts` (verificar score máximo e disparar GAME_OVER)
+- [ ] 3. Frontend: Configuração de Perfil no Lobby
+  - [ ] 3.1. Atualizar `Lobby.tsx` com seletores de avatar/cor e painel de settings para o Host
+- [ ] 4. Frontend: Presença e Fim de Jogo
+  - [ ] 4.1. Atualizar `GameRoom.tsx` (estado de digitação, renderização do GAME_OVER)
+  - [ ] 4.2. Atualizar `PlayerSidebar.tsx` (anéis coloridos e indicador de digitação animado)
+  - [ ] 4.3. Atualizar `ActiveCard.tsx` (tela Bento do Pódio com estatísticas)

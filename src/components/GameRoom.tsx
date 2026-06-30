@@ -105,6 +105,9 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
   const nextRound = useMutation(api.rooms.nextRound);
   const forceEndRound = useMutation(api.rooms.forceEndRound);
   const leaveRoom = useMutation(api.players.leaveRoom);
+  const updateTypingStatus = useMutation(api.players.updateTypingStatus);
+  const updateRoomSettings = useMutation(api.rooms.updateRoomSettings);
+  const resetRoomToLobby = useMutation(api.rooms.resetRoomToLobby);
 
   const [inputText, setInputText] = useState("");
   const [timeLeft, setTimeLeft] = useState(60);
@@ -112,6 +115,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
   const [errorMsg, setErrorMsg] = useState("");
 
   const lastMessageIdRef = useRef<string | null>(null);
+  const typingTimeoutRef = useRef<any | null>(null);
 
   // Efeitos visuais e sonoros reativos (Confete no acerto, Shake e Buzz no erro)
   useEffect(() => {
@@ -120,7 +124,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
       if (lastMsg._id !== lastMessageIdRef.current) {
         lastMessageIdRef.current = lastMsg._id;
         
-        if (lastMsg.type === "correct") {
+        if (lastMsg.type === "correct" || room.status === "GAME_OVER") {
           playSuccessSound();
           import("canvas-confetti").then((module) => {
             const confetti = module.default;
@@ -139,7 +143,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
         }
       }
     }
-  }, [room?.messages]);
+  }, [room?.messages, room?.status]);
 
   // Temporizador local reativo sincronizado com o Convex com feedback sonoro (tique-taque)
   useEffect(() => {
@@ -183,6 +187,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
     window.addEventListener("beforeunload", handleUnload);
     return () => {
       window.removeEventListener("beforeunload", handleUnload);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [roomId, playerToken, leaveRoom]);
 
@@ -198,9 +203,39 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
   const isSpeaker = room.currentSpeakerId === playerToken;
   const currentSpeaker = room.players.find((p) => p.token === room.currentSpeakerId);
 
+  const handleInputChange = (text: string) => {
+    setInputText(text);
+
+    // Dispara typing status true no Convex
+    updateTypingStatus({
+      roomId: room._id,
+      token: playerToken,
+      isTyping: text.trim().length > 0,
+    }).catch(() => {});
+
+    // Debounce para limpar status digitando após 1.5s
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      updateTypingStatus({
+        roomId: room._id,
+        token: playerToken,
+        isTyping: false,
+      }).catch(() => {});
+    }, 1500);
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
+
+    // Limpa status digitando imediatamente
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    updateTypingStatus({
+      roomId: room._id,
+      token: playerToken,
+      isTyping: false,
+    }).catch(() => {});
 
     try {
       setErrorMsg("");
@@ -253,10 +288,34 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
     onLeave();
   };
 
+  const handleUpdateSettings = async (duration: number, score: number) => {
+    try {
+      await updateRoomSettings({
+        roomId: room._id,
+        token: playerToken,
+        roundDuration: duration,
+        targetScore: score,
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar configurações", err);
+    }
+  };
+
+  const handleResetGame = async () => {
+    try {
+      await resetRoomToLobby({
+        roomId: room._id,
+        token: playerToken,
+      });
+    } catch (err) {
+      console.error("Erro ao reiniciar jogo", err);
+    }
+  };
+
   return (
     <div className="fade-in" style={{ display: "flex", flexDirection: "column", flex: 1, height: "100vh", padding: "16px", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
       {/* Header */}
-      <header className="glass-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", marginBottom: "16px", borderRadius: "16px" }}>
+      <header className="glass-panel" style={{ display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "space-between", padding: "16px 24px", marginBottom: "16px", borderRadius: "16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <h2 style={{ fontSize: "1.4rem", fontWeight: 800 }} className="gradient-text">Forbidden Words</h2>
           <span style={{ fontSize: "0.85rem", padding: "4px 10px", borderRadius: "99px", background: "rgba(6, 182, 212, 0.15)", color: "rgba(6, 182, 212, 1)", fontWeight: 700 }}>
@@ -300,19 +359,24 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
               forbiddenTranslations={room.forbiddenTranslations}
               currentSpeakerName={currentSpeaker?.name}
               playerCount={room.players.length}
+              roundDuration={room.roundDuration}
+              targetScore={room.targetScore}
+              players={room.players}
               onStartGame={handleStart}
               onNextRound={handleNext}
               onVoiceTranscript={handleVoiceTranscript}
+              onUpdateSettings={handleUpdateSettings}
+              onResetGame={handleResetGame}
             />
           </div>
 
           {/* Chat & Messages Log Panel */}
           <ChatPanel
             messages={room.messages}
-            status={room.status}
+            status={room.status === "GAME_OVER" ? "ROUND_END" : room.status}
             isSpeaker={isSpeaker}
             inputText={inputText}
-            onChangeInput={setInputText}
+            onChangeInput={handleInputChange}
             onSendMessage={handleSend}
             errorMsg={errorMsg}
           />
