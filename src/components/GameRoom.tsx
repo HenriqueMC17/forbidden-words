@@ -191,6 +191,19 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
     };
   }, [roomId, playerToken, leaveRoom]);
 
+  const handleVoiceTranscript = useCallback(async (text: string) => {
+    if (!room) return;
+    try {
+      await sendMessage({
+        roomId: room._id,
+        token: playerToken,
+        text,
+      });
+    } catch (err) {
+      console.error("Erro ao enviar transcrição de voz", err);
+    }
+  }, [room?._id, playerToken, sendMessage]);
+
   if (!room) {
     return (
       <div style={{ display: "flex", flex: 1, alignItems: "center", justifyItems: "center", color: "var(--text-secondary)" }}>
@@ -250,17 +263,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerToken, onLeave
     }
   };
 
-  const handleVoiceTranscript = useCallback(async (text: string) => {
-    try {
-      await sendMessage({
-        roomId: room._id,
-        token: playerToken,
-        text,
-      });
-    } catch (err) {
-      console.error("Erro ao enviar transcrição de voz", err);
-    }
-  }, [room?._id, playerToken, sendMessage]);
+
 
   const handleStart = async () => {
     try {
