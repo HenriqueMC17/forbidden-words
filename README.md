@@ -9,6 +9,7 @@ Esta versão foi aprimorada sob os mais rígidos princípios de **Design Enginee
 ## 🏛️ Funcionalidades & Diferenciais Premium
 
 ### 1. 🎨 Engenharia de Design (Premium UI/UX)
+Para as especificações visuais de Bento Layouts, fontes Geist e contraste de cores APCA, consulte o [2026 Enterprise Interface Standardization Manual](file:///c:/Dev/Docs/Mastering%20AntiGravity%20and%20Google%20Stitch%20The%20Loop%20Design%20Manual/2026%20Enterprise%20Interface%20Standardization%20Manual_%20A%20Reference%20for%20Design%2C%20Product%2C%20and%20Engineering.md).
 *   **Dark Mode Tri-Layer (L0/L1/L2)**: Layout sem profundidade plana, utilizando cores específicas para cada camada de empilhamento de material:
     *   **Base (L0)**: `#0D0D0D` com sombras ambientais em camadas.
     *   **Card/Surface (L1)**: `#1A1A1A` delimitado por bordas finas sólidas semi-transparentes de 1px a 8% white.
@@ -88,3 +89,4 @@ O desenvolvimento do código é regido por diretrizes estritas do agente de IA c
 *   [AGENTS.md](file:///c:/Dev/forbidden-words/AGENTS.md) — Constituição Suprema.
 *   `.agents/rules/GEMINI.md` — Regras operacionais da engine do Gemini.
 *   `.agents/rules/CLAUDE.md` — Regras operacionais da engine do Claude.
+*   [Mastering the Web Guard: Browser Security](file:///c:/Dev/Docs/Programação%20Web/Mastering%20the%20Web%20Guard_%20A%20Learner%27s%20Guide%20to%20Browser%20Security%20%28SOP%2C%20CORS%2C%20and%20CSRF%29.md) — Diretrizes avançadas sobre cookies SameSite, proteção CORS e mitigação CSRF.
